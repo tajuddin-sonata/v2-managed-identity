@@ -1,7 +1,5 @@
 pipeline {
-    agent {
-        label 'jenkins-slave'
-    }
+    agent any
 
     parameters{
         choice(name: 'ENVIRONMENT', choices:[
@@ -24,10 +22,7 @@ pipeline {
             jenkins-wf-analyse-ASP
             jenkins-wf-redact-ASP''' )
         
-        string(name: 'APP_INSIGHTS_INSTRUMENTATION_KEY', description: '''select the existing Application insight Instrumentation Key .
-            9b3a9c7a-fec6-4f67-b669-a149294fbeee 
-            ''' )
-
+        
         string(name: 'FUNC_STORAGE_ACCOUNT_NAME', description: '''select the existing Storage account name for Func App or create new .
             v2funcappstg569650
             ccadevfunctionappstgacc 
@@ -36,6 +31,10 @@ pipeline {
         string(name: 'AZURE_APP_INSIGHTS_NAME', description: '''The name of Application insight for FunctionApp to deploy
             v2-func-app-insight
             ''' )
+        
+        // string(name: 'APP_INSIGHTS_INSTRUMENTATION_KEY', description: '''select the existing Application insight Instrumentation Key .
+        //     9b3a9c7a-fec6-4f67-b669-a149294fbeee 
+        //     ''' )
 
         string(name: 'REGION', defaultValue: 'CentralIndia', description: 'Region to Deploy to.')
 
@@ -102,13 +101,13 @@ pipeline {
         stage('Create FunctionApp') {
             steps {
                 // Create ASP for functionApp
-                sh 'az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID'
                 sh "az account set --subscription ${params.SUBSCRIPTION}"
+                sh "az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID"
                 // sh "az appservice plan create --name ${params.AZURE_FUNCTION_ASP_NAME} --resource-group ${params.RESOURCE_GROUP_NAME} --sku ${params.SKU} --is-linux --location ${params.REGION}"
                 
                 // Create FunctionApp
-                sh "az functionapp create --name ${params.AZURE_FUNCTION_NAME} --resource-group ${params.RESOURCE_GROUP_NAME} --plan ${params.AZURE_FUNCTION_ASP_NAME} --runtime python --runtime-version ${params.PYTHON_RUNTIME_VERSION} --functions-version 4 --storage-account ${params.FUNC_STORAGE_ACCOUNT_NAME}"
-                sh "az functionapp config appsettings set --name ${params.AZURE_FUNCTION_NAME} --resource-group ${params.RESOURCE_GROUP_NAME} --settings APPINSIGHTS_INSTRUMENTATIONKEY=${params.APP_INSIGHTS_INSTRUMENTATION_KEY}"
+                sh "az functionapp create --name ${params.AZURE_FUNCTION_NAME} --resource-group ${params.RESOURCE_GROUP_NAME} --plan ${params.AZURE_FUNCTION_ASP_NAME} --runtime python --runtime-version ${params.PYTHON_RUNTIME_VERSION} --functions-version 4 --storage-account ${params.FUNC_STORAGE_ACCOUNT_NAME} --app-insights ${params.AZURE_APP_INSIGHTS_NAME}"
+                // sh "az functionapp config appsettings set --name ${params.AZURE_FUNCTION_NAME} --resource-group ${params.RESOURCE_GROUP_NAME} --settings APPINSIGHTS_INSTRUMENTATIONKEY=${params.APP_INSIGHTS_INSTRUMENTATION_KEY}"
             }
         }
 
