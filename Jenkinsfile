@@ -109,7 +109,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 // checkout scm
-                git branch: 'feature/wf_analyse', url: 'https://github.com/tajuddin-sonata/v2-managed-identity.git'
+                git branch: 'feature/wf_analyse_async', url: 'https://github.com/tajuddin-sonata/v2-managed-identity.git'
 
             }
         }

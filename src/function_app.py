@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from time import time
 from typing import Union
 from uuid import uuid1
+import asyncio
 
 start_time = time()
 
@@ -61,13 +62,14 @@ time_cold_start = time() - start_time
 # storage_client = BlobServiceClient.from_connection_string(connection_string)
 
 ### MAIN
+
 app = func.FunctionApp()
 @app.function_name(name="wf_analyse_HttpTrigger1")
 @app.route(route="wf_analyse_HttpTrigger1")
 
 # @functions_framework.http
 # @expects_json(schema)
-def main(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
+async def main(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
     """HTTP Cloud Function.
     Args:
         request (flask.Request): The request object.
@@ -96,7 +98,7 @@ def main(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
     account_url = CONFIG.context.storageaccounturl
     storage_client = BlobServiceClient(account_url=account_url, credential=DefaultAzureCredential())
 
-    ### Output Variables
+    # Output Variables
     response_json = {}
     out_files = {}
 
@@ -108,74 +110,79 @@ def main(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
     )
 
     try:
-        ### Try to fetch blob properties with the condition that the ETag must match the desired_etag
+        # Try to fetch blob properties with the condition that the ETag must match the desired_etag
         etag_value = transcript_blob.get_blob_properties(if_match=CONFIG.input_files.transcript.version)
-        logging.info(f'Transcript Blob Name: {transcript_blob.blob_name}')
-        logging.info(f'Transcript Blob ETag: {etag_value["etag"]}')
+        logging.info(f'Media Blob Name: {transcript_blob.blob_name}')
+        logging.info(f'Blob ETag: {etag_value["etag"]}')
 
     except ResourceNotFoundError:
-        ### Handle the case where the blob with the specified ETag is not found
+        # Handle the case where the blob with the specified ETag is not found
         abort(404, "transcript file not found in bucket")
 
-    ### Download the blob as a string    
+    # Download the blob as a string    
     transcript_content = transcript_blob.download_blob().readall()
 
-    ### Parse the JSON content
+    # Parse the JSON content
     transcript = json.loads(transcript_content)
+    # logging.info(f"Transcipt json: {transcript}")
 
     #####################################################
-    ### Metrics
+    # Metrics
     #####################################################
-    out_files["metrics"] = do_metrics(CONFIG, transcript)
+    # out_files["metrics"] = do_metrics(CONFIG, transcript)
+    out_files["metrics"] = await do_metrics(CONFIG, transcript)
 
     #####################################################
-    ### Spellcheck
+    # Spellcheck
     #####################################################
 
     if not ("metadata" in transcript and "media" in transcript["metadata"]
         and transcript["metadata"]["media"]["media_type"]=="voice"):
-        ### Do spellcheck if spellcheck condition is met
-        transcript, out_files["spellchecked_transcript"] = do_spellcheck(
+        # Log metadata for debugging 
+        logging.info("Transcript metadata found: %s", transcript.get("metadata"))
+        logging.warning("Transcript represents voice media_type. Skipping spellcheck as Spellcheck condition not met.")
+        ## Do spellcheck if spellcheck condition is met
+        transcript, out_files["spellchecked_transcript"] = await do_spellcheck(
             CONFIG, transcript
         )
-
-
+    
     #####################################################
-    ### NLP
+    # NLP
     #####################################################
-    out_files["nlp"] = do_nlp(CONFIG, transcript)
+    out_files["nlp"] = await do_nlp(CONFIG, transcript)
 
-    ### Return with all the locations
+
+    # Return with all the locations
     response_json["status"] = "success"
     response_json["staged_files"] = out_files
     # return make_response(response_json, 200)
     logging.info(f"response_json_output: {response_json}")
     return func.HttpResponse(body=dumps(response_json), status_code=200, mimetype='application/json')
 
-def do_metrics(CONFIG: Config, transcript) -> dict:
+async def do_metrics(CONFIG: Config, transcript) -> dict:
     metrics = calculate_metrics(transcript)
-    return upload_json("metrics", metrics, CONFIG)
+    return await upload_json("metrics", metrics, CONFIG)
 
 
-def do_spellcheck(CONFIG: Config, transcript: dict) -> Tuple[dict, dict]:
+async def do_spellcheck(CONFIG: Config, transcript: dict) -> Tuple[dict, asyncio.Task]:
     spellcheck_config = CONFIG.function_config.spellcheck_config
-    spellchecked_transcript, spellcheck_time_taken = spellcheck(
+    spellchecked_transcript, spellcheck_time_taken = await spellcheck(
         transcript, spellcheck_config
     )
     return (
         spellchecked_transcript,
-        upload_json("spellchecked_transcript", spellchecked_transcript, CONFIG),
+        await upload_json("spellchecked_transcript", spellchecked_transcript, CONFIG),
     )
  
 
-def do_nlp(CONFIG: Config, spellchecked_transcript: dict) -> dict:
-    nlp, nlp_time_taken = nlp_spacy(
+async def do_nlp(CONFIG: Config, spellchecked_transcript: dict) -> dict:
+    nlp, nlp_time_taken = await nlp_spacy(
         spellchecked_transcript, CONFIG.function_config.nlp_config
     )
-    return upload_json("nlp", nlp, CONFIG)
+    return await upload_json("nlp", nlp, CONFIG)
 
 
-def upload_json(type: str, data: dict, CONFIG: Config):
+async def upload_json(type: str, data: dict, CONFIG: Config):
     
     account_url = CONFIG.context.storageaccounturl
     storage_client = BlobServiceClient(account_url=account_url, credential=DefaultAzureCredential())
@@ -193,8 +200,8 @@ def upload_json(type: str, data: dict, CONFIG: Config):
     )
     # staging_blob.upload_from_string(dumps(data), content_type="application/json")
 
-    staging_blob.upload_blob(dumps(data),content_type='application/json', overwrite=True)
+    staging_blob.upload_blob(dumps(data),content_type='application/json',overwrite=True)
     
     if not staging_blob.exists():
         abort(500, "{} failed to upload to bucket".format(type))
-    return create_outgoing_file_ref(staging_blob)
+    return await create_outgoing_file_ref(staging_blob)

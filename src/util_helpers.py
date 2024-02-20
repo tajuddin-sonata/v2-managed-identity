@@ -1,4 +1,5 @@
 from typing import Union
+# from google.auth import default, impersonated_credentials
 import functions_framework
 from flask import request, g
 from werkzeug.exceptions import InternalServerError, BadRequest, NotFound
@@ -6,6 +7,7 @@ from jsonschema import ValidationError
 from json import dumps
 import logging
 from traceback import format_exc
+# from google.cloud import storage
 from util_input_validation import Config
 
 ###Libraries for Azure
@@ -14,9 +16,7 @@ from azure.identity import DefaultAzureCredential, ManagedIdentityCredential
 from azure.storage.blob import BlobServiceClient, BlobClient
 from datetime import datetime, timedelta
 
-
-
-def impersonate_account(signing_account: str, lifetime: int):
+async def impersonate_account(signing_account: str, lifetime: int):
     impersonated_credential = ManagedIdentityCredential(
         client_id=signing_account,
         lifetime=lifetime,
@@ -33,7 +33,7 @@ def impersonate_account(signing_account: str, lifetime: int):
 #     }
 #     return impersonated_credential
 
-def create_outgoing_file_ref(file: Union[BlobClient, Config.InputFiles.InputFile]):
+async def create_outgoing_file_ref(file: Union[BlobClient, Config.InputFiles.InputFile]):
     if isinstance(file, BlobClient):
         container_name = file.container_name
         blob_properties = file.get_blob_properties()
@@ -56,7 +56,6 @@ def create_outgoing_file_ref(file: Union[BlobClient, Config.InputFiles.InputFile
         }
     else:
         return {}
-
 
 def handle_exception(req: func.HttpRequest, e) -> func.HttpResponse:
     """Return JSON instead of HTML for HTTP errors."""
