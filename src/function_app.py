@@ -62,6 +62,8 @@ app = func.FunctionApp()
 @app.function_name(name="wf_transcode_HttpTrigger1")
 @app.route(route="wf_transcode_HttpTrigger1")
 
+# @functions_framework.http
+# @expects_json(schema)
 def main(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
     logging.info('HTTP trigger function processed a request.')
 
