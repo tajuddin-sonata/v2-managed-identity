@@ -15,19 +15,18 @@ pipeline {
         string(name: 'VERSION', description: 'Explicit version to deploy (i.e., "v0.1"). Leave blank to build latest commit')
         
         
-        string(name: 'AZURE_FUNCTION_NAME', defaultValue:'dev-wf-configure', description: '''The name of FunctionApp to deploy
-            dev-wf-configure 
-            stg-wf-configure
-            prod-wf-configure''' )
-
+        string(name: 'AZURE_FUNCTION_NAME', defaultValue:'dev-wf-analyse', description: '''The name of FunctionApp to deploy
+            dev-wf-analyse 
+            stg-wf-analyse
+            prod-wf-analyse''' )
 
         /*
         string(name: 'AZURE_FUNCTION_ASP_NAME', defaultValue:'jenkins-ASP', description: '''The name of App service Plan for FunctionApp to deploy
             v2-functions-ASP
             jenkins-ASP
-            dev-wf-configure-ASP 
-            stg-wf-configure-ASP
-            prod-wf-configure-ASP''' )
+            dev-wf-analyse-ASP 
+            stg-wf-analyse-ASP
+            prod-wf-analyse-ASP''' )
         
         
         string(name: 'FUNC_STORAGE_ACCOUNT_NAME', defaultValue:'v2funcappstg569650', description: '''select the existing Storage account name for Func App or create new .
@@ -39,11 +38,9 @@ pipeline {
             v2-func-app-insight
             ''' )
 
-
         string(name: 'REGION', defaultValue:'Central India',  description: '''Region to Deploy to.
         eastus, eastus2, westus, westus2, 
         southindia, centralindia, westindia''')
-
         */
 
         string(name: 'SUBSCRIPTION', defaultValue:'48986b2e-5349-4fab-a6e8-d5f02072a4b8', description: ''' select subscription as:
