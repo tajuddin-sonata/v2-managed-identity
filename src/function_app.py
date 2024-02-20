@@ -55,20 +55,18 @@ from werkzeug.exceptions import InternalServerError, BadRequest, NotFound
 instance_id = str(uuid1())
 run_counter = 0
 
+time_cold_start = time() - start_time
+
 # connection_string = os.environ['StorageAccountConnectionString']
 # storage_client = BlobServiceClient.from_connection_string(connection_string)
 
-time_cold_start = time() - start_time
-
-
 ### MAIN
-# @functions_framework.http
-# @expects_json(schema)
-
 app = func.FunctionApp()
 @app.function_name(name="wf_analyse_HttpTrigger1")
 @app.route(route="wf_analyse_HttpTrigger1")
 
+# @functions_framework.http
+# @expects_json(schema)
 def main(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
     """HTTP Cloud Function.
     Args:
@@ -86,16 +84,19 @@ def main(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
     request_json = req.get_json()
     CONFIG = Config(request_json)
     del request_json
-    context = {
+    context_json = {
         **CONFIG.context.toJson(),
         "instance": instance_id,
         "instance_run": run_counter,
         "request_recieved": request_recieved.isoformat(),
     }
+
+    logging.info(f'Received request: {context_json}')
+
     account_url = CONFIG.context.storageaccounturl
     storage_client = BlobServiceClient(account_url=account_url, credential=DefaultAzureCredential())
 
-    # Output Variables
+    ### Output Variables
     response_json = {}
     out_files = {}
 
@@ -107,45 +108,44 @@ def main(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
     )
 
     try:
-        # Try to fetch blob properties with the condition that the ETag must match the desired_etag
+        ### Try to fetch blob properties with the condition that the ETag must match the desired_etag
         etag_value = transcript_blob.get_blob_properties(if_match=CONFIG.input_files.transcript.version)
         logging.info(f'Transcript Blob Name: {transcript_blob.blob_name}')
         logging.info(f'Transcript Blob ETag: {etag_value["etag"]}')
 
     except ResourceNotFoundError:
-        # Handle the case where the blob with the specified ETag is not found
+        ### Handle the case where the blob with the specified ETag is not found
         abort(404, "transcript file not found in bucket")
 
-    # Download the blob as a string    
+    ### Download the blob as a string    
     transcript_content = transcript_blob.download_blob().readall()
 
-    # Parse the JSON content
+    ### Parse the JSON content
     transcript = json.loads(transcript_content)
-    # logging.info(f"Transcipt json: {transcript}")
 
     #####################################################
-    # Metrics
+    ### Metrics
     #####################################################
     out_files["metrics"] = do_metrics(CONFIG, transcript)
 
     #####################################################
-    # Spellcheck
+    ### Spellcheck
     #####################################################
 
     if not ("metadata" in transcript and "media" in transcript["metadata"]
         and transcript["metadata"]["media"]["media_type"]=="voice"):
-        ## Do spellcheck if spellcheck condition is met
+        ### Do spellcheck if spellcheck condition is met
         transcript, out_files["spellchecked_transcript"] = do_spellcheck(
             CONFIG, transcript
         )
 
 
     #####################################################
-    # NLP
+    ### NLP
     #####################################################
     out_files["nlp"] = do_nlp(CONFIG, transcript)
 
-    # Return with all the locations
+    ### Return with all the locations
     response_json["status"] = "success"
     response_json["staged_files"] = out_files
     # return make_response(response_json, 200)

@@ -1,5 +1,4 @@
 from typing import Union
-# from google.auth import default, impersonated_credentials
 import functions_framework
 from flask import request, g
 from werkzeug.exceptions import InternalServerError, BadRequest, NotFound
@@ -7,7 +6,6 @@ from jsonschema import ValidationError
 from json import dumps
 import logging
 from traceback import format_exc
-# from google.cloud import storage
 from util_input_validation import Config
 
 ###Libraries for Azure
