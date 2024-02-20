@@ -20,8 +20,6 @@ pipeline {
             stg-wf-configure
             prod-wf-configure''' )
 
-
-        /*
         string(name: 'AZURE_FUNCTION_ASP_NAME', defaultValue:'jenkins-ASP', description: '''The name of App service Plan for FunctionApp to deploy
             v2-functions-ASP
             jenkins-ASP
@@ -38,13 +36,22 @@ pipeline {
         string(name: 'AZURE_APP_INSIGHTS_NAME', defaultValue:'v2-func-app-insight', description: '''The name of Existing Application insight for FunctionApp.
             v2-func-app-insight
             ''' )
-
+        
+        // string(name: 'APP_INSIGHTS_INSTRUMENTATION_KEY', description: '''select the existing Application insight Instrumentation Key .
+        //     9b3a9c7a-fec6-4f67-b669-a149294fbeee 
+        //     ''' )
 
         string(name: 'REGION', defaultValue:'Central India',  description: '''Region to Deploy to.
-        eastus, eastus2, westus, westus2, 
-        southindia, centralindia, westindia''')
+        East US, East US 2, West US, West US 2, 
+        Australia East, Australia Southeast, Australia Central, Australia Central 2, Southeast Asia 
+        South India, Central India, West India''')
 
-        */
+        // choice(name: 'SUBSCRIPTION', choices:[
+        //     '48986b2e-5349-4fab-a6e8-d5f02072a4b8',
+        //     '34b1c36e-d8e8-4bd5-a6f3-2f92a1c0626e',
+        //     '70c3af66-8434-419b-b808-0b3c0c4b1a04'
+        //     ],
+        //     description: 'Subscription to deploy to .')
 
         string(name: 'SUBSCRIPTION', defaultValue:'48986b2e-5349-4fab-a6e8-d5f02072a4b8', description: ''' select subscription as:
             48986b2e-5349-4fab-a6e8-d5f02072a4b8
@@ -63,8 +70,6 @@ pipeline {
         //     jenkins-privateend-connection
         //     ''')
 
-
-        /*
         string(name: 'VNET_NAME', defaultValue:'jenkins-vm-vnet', description: ''' Vnet name for Private endpoint connection & Vnet integration.
             jenkins-vm-vnet
             ''')
@@ -94,8 +99,6 @@ pipeline {
             '3.10',
             '3.11'],
             description: 'Python runtime version.')
-
-        */
     }
 
     environment {
@@ -112,20 +115,21 @@ pipeline {
         stage('Checkout') {
             steps {
                 // checkout scm
-                git branch: 'feature/wf_configure', url: 'https://github.com/tajuddin-sonata/v2-managed-identity.git'
+                git branch: 'dev', url: 'https://github.com/tajuddin-sonata/v2-wf-configure-repo.git'
+                
+                // Install Pip
+                // sh 'sudo yum install -y python3-pip'
 
+                // Install project dependencies
+                // sh 'pip3 install -r requirements.txt -t .'
             }
         }
 
-
-        /*
-        stage('Package Code') {
-            steps {
-                sh "zip -r ${ZIP_FILE_NAME} ."
-            }
-        }
-        */
-
+        // stage('Package Code') {
+        //     steps {
+        //         sh "zip -r ${ZIP_FILE_NAME} ."
+        //     }
+        // }
 
         /*
         stage('SonarQube Analysis') {
@@ -176,53 +180,8 @@ pipeline {
             }
         }
         */
+        
 
-
-        stage('Check/install Azure Tools') {
-            steps {
-                script {
-
-                    // check if Azure CLI is installed, if not installed then install it.
-                    def azcliVersion = sh(script: 'az -v', returnStatus: true)
-                    if (azcliVersion != 0) {
-                        echo "Azure CLI is not installed, installing now..."
-                        // Install Azure function core tool
-                        sh 'sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc'
-                        sh 'sudo dnf install -y https://packages.microsoft.com/config/rhel/9.0/packages-microsoft-prod.rpm'
-                        sh 'sudo dnf install azure-cli -y'
-                    } else {
-                        def az_installedVersion = sh(script: 'az -v', returnStdout: true).trim()
-                        echo "func core tool is already installed (Version: ${az_installedVersion})"
-                    }
-
-                    // check if nodejs is installed, if not installed then install it.
-                    def nodeVersion = sh(script: 'node -v', returnStatus: true)
-                    if (nodeVersion != 0) {
-                        echo "Node.js is not installed, installing now..."
-                        // Install Node.js
-                        // sh 'curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -'
-                        sh 'sudo yum install -y nodejs'
-                    } else {
-                        def node_installedVersion = sh(script: 'node -v', returnStdout: true).trim()
-                        echo "Node.js is already installed (Version: ${node_installedVersion})"
-                    }
-
-                    // check if Azure function core tool is installed, if not installed then install it.
-                    def funcVersion = sh(script: 'func -v', returnStatus: true)
-                    if (funcVersion != 0) {
-                        echo "Azure function core tool is not installed, installing now..."
-                        // Install Azure function core tool
-                        sh 'sudo npm i -g azure-functions-core-tools@4 --unsafe-perm true'
-                    } else {
-                        def func_installedVersion = sh(script: 'func -v', returnStdout: true).trim()
-                        echo "Azure function core tool is already installed (Version: ${func_installedVersion})"
-                    }
-                }
-            }
-        }
-
-
-        /*
         stage('Create FunctionApp') {
             steps {
                 // Login to azure using service principal
@@ -252,7 +211,6 @@ pipeline {
                 sh "az network private-endpoint dns-zone-group create --endpoint-name ${params.AZURE_FUNCTION_NAME}-private-endpoint -g ${params.RESOURCE_GROUP_NAME} -n ${params.AZURE_FUNCTION_NAME}-dns-config --zone-name default --private-dns-zone privatelink.azurewebsites.net" 
             }
         }
-        */
 
         stage('Deploy artifacts to Nexus & Azure') {
             steps {
@@ -311,6 +269,59 @@ pipeline {
             }
         } */
  
+    }
+}
+
+
+
+pipeline {
+    agent {
+        label 'jenkins-slave2'
+    }
+    
+    stages {
+        stage('Check/install Nodejs & Azure Tools') {
+            steps {
+                script {
+
+                    // check if Azure CLI is installed, if not installed then install it.
+                    def azcliVersion = sh(script: 'az -v', returnStatus: true)
+                    if (azcliVersion != 0) {
+                        echo "Azure CLI is not installed, installing now..."
+                        // Install Azure function core tool
+                        sh 'sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc'
+                        sh 'sudo dnf install -y https://packages.microsoft.com/config/rhel/9.0/packages-microsoft-prod.rpm'
+                        sh 'sudo dnf install azure-cli -y'
+                    } else {
+                        def az_installedVersion = sh(script: 'az -v', returnStdout: true).trim()
+                        echo "func core tool is already installed (Version: ${az_installedVersion})"
+                    }
+
+                    // check if nodejs is installed, if not installed then install it.
+                    def nodeVersion = sh(script: 'node -v', returnStatus: true)
+                    if (nodeVersion != 0) {
+                        echo "Node.js is not installed, installing now..."
+                        // Install Node.js
+                        // sh 'curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -'
+                        sh 'sudo yum install -y nodejs'
+                    } else {
+                        def node_installedVersion = sh(script: 'node -v', returnStdout: true).trim()
+                        echo "Node.js is already installed (Version: ${node_installedVersion})"
+                    }
+
+                    // check if Azure function core tool is installed, if not installed then install it.
+                    def funcVersion = sh(script: 'func -v', returnStatus: true)
+                    if (funcVersion != 0) {
+                        echo "Azure function core tool is not installed, installing now..."
+                        // Install Azure function core tool
+                        sh 'sudo npm i -g azure-functions-core-tools@4 --unsafe-perm true'
+                    } else {
+                        def func_installedVersion = sh(script: 'func -v', returnStdout: true).trim()
+                        echo "Azure function core tool is already installed (Version: ${func_installedVersion})"
+                    }
+                }
+            }
+        }
     }
 }
 

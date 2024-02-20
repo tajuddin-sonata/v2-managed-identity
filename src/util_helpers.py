@@ -9,8 +9,6 @@ from traceback import format_exc
 from util_input_validation import Config
 
 ###Libraries for Azure
-import os
-import time
 import azure.functions as func
 from azure.identity import DefaultAzureCredential, ManagedIdentityCredential
 from azure.storage.blob import BlobServiceClient, BlobClient

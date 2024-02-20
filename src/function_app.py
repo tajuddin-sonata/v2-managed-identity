@@ -45,6 +45,8 @@ app = func.FunctionApp()
 @app.function_name(name="wf_configure_HttpTrigger1")
 @app.route(route="wf_configure_HttpTrigger1")
 
+# @functions_framework.http
+# @expects_json(schema)
 def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request.')
 
@@ -64,13 +66,13 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     request_json = req.get_json()
     CONFIG = Config(request_json)
     del request_json
-    context = {
+    context_json = {
         **CONFIG.context.toJson(), 
         "instance": instance_id,
         "instance_run": run_counter,
         "request_recieved": request_recieved.isoformat(),
     }
-    logging.info(f'Received request: {context}')
+    logging.info(f'Received request: {context_json}')
 
     account_url = CONFIG.context.storageaccounturl
     storage_client = BlobServiceClient(account_url=account_url, credential=DefaultAzureCredential())
@@ -83,11 +85,11 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         "status": "error",
     }
 
-    # Get Config Bucket
+    ### Get Config Bucket
     config_bucket = storage_client.get_container_client(CONFIG.function_config.config_bucket_name)
 
     if CONFIG.function_config.label_tags:
-        # Find Client's Buckets by label
+        ### Find Client's Buckets by label
         landing, staging, content = find_client_buckets(
             storage_client,
             CONFIG.function_config.config_bucket_name,
@@ -107,7 +109,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         )
         response_json["client_config"] = merged_config
 
-        # Generate Staging Folder path
+        ### Generate Staging Folder path
     if (
         CONFIG.input_files
         and CONFIG.input_files.source_file.uploaded
@@ -121,13 +123,13 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         response_json["content_folder_path"] = content_folder_path
         response_json["interaction_id"] = interaction_id
 
-        # # Return with all the configuration info
+        ### Return with all the configuration info
         # response_json["status"] = "success"
         # return response_json, 200
         # except Exception as e:
         #     return handle_exception(e,CONFIG.context.toJson(),{x:y for x,y in CONFIG.toJson().items() if x !='context'})
    
-    # Return with all the configuration info
+    ### Return with all the configuration info
     response_json["status"] = "success"
     return func.HttpResponse(dumps(response_json), mimetype="application/json", status_code=200)
 
@@ -145,7 +147,7 @@ def get_config(
             config_list[item] = None
 
     for config_item in config_list.keys():
-        # Pull Config from bucket
+        ### Pull Config from bucket
         config_list[config_item] = get_client_function_config(
             config_bucket, client_id, config_item
         )
