@@ -10,12 +10,11 @@ from flask import Request, abort, g
 from flask_expects_json import expects_json
 from os import environ
 
+#Azure libraries
 import os
 import sys
 import json
 import subprocess
-
-#Azure libraries
 import azure.functions as func
 from azure.storage.blob import BlobServiceClient, generate_blob_sas, BlobSasPermissions
 from azure.core.exceptions import ResourceNotFoundError
@@ -52,19 +51,18 @@ from tempfile import TemporaryDirectory
 instance_id = str(uuid1())
 run_counter = 0
 
+time_cold_start = time() - start_time
+
 # connection_string = os.environ['StorageAccountConnectionString']
 # storage_client = BlobServiceClient.from_connection_string(connection_string)
 
-time_cold_start = time() - start_time
-
-
 ### MAIN
-# @functions_framework.http
-# @expects_json(schema)
-
 app = func.FunctionApp()
 @app.function_name(name="wf_redact_HttpTrigger1")
 @app.route(route="wf_redact_HttpTrigger1")
+
+# @functions_framework.http
+# @expects_json(schema)
 def main(req: func.HttpRequest) -> func.HttpResponse:
     """HTTP Cloud Function.
     Args:
@@ -76,25 +74,26 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         <https://flask.palletsprojects.com/en/1.1.x/api/#flask.make_response>.
     """
 
-    # Input Variables
+    ### Input Variables
     global run_counter
     run_counter += 1
     request_recieved = datetime.now(timezone.utc)
     request_json = req.get_json()
     CONFIG = Config(request_json)
     del request_json
-    context = {
+    context_json = {
         **CONFIG.context.toJson(),
         "instance": instance_id,
         "instance_run": run_counter,
         "request_recieved": request_recieved.isoformat(),
     }
+    logging.info(f'Received request: {context_json}')
 
     account_url = CONFIG.context.storageaccounturl
     storage_client = BlobServiceClient(account_url=account_url, credential=DefaultAzureCredential())
 
 
-    # Output Variables
+    ### Output Variables
     response_json = {
         "staged_files":{},
         "required_redaction":False
@@ -111,18 +110,18 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
     ##### check and Install ffmpeg package #######
     try:
-        # Check if FFmpeg is already installed
+        ### Check if FFmpeg is already installed
         check_ffmpeg_installed = "ffmpeg -version"
         subprocess.run(check_ffmpeg_installed, shell=True, check=True)
         logging.info("FFmpeg is already installed.")
     except subprocess.CalledProcessError:
-        # If FFmpeg is not installed, attempt to install it
+        ### If FFmpeg is not installed, attempt to install it
         install_command = "apt-get install -y ffmpeg || yum install -y ffmpeg"
         try:
             subprocess.run(install_command, shell=True, check=True)
             logging.info("FFmpeg installed successfully.")
         except subprocess.CalledProcessError as e:
-            # Log the exception details
+            ### Log the exception details
             logging.exception("Error installing FFmpeg: %s", e)
 
     ### Get Staging Bucket
@@ -153,10 +152,6 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         abort(404, "nlp or transcript input_files not found on buckets")
 
     ###### MAIN ######
-
-    ### Download NLP + Transcript
-    # nlp_bytes = loads(nlp_blob.download_as_bytes())
-    # transcript_bytes = loads(transcript_blob.download_as_bytes())
 
     #### Download NLP + Transcript
     nlp_bytes = loads(nlp_blob.download_blob().readall())
