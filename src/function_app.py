@@ -79,6 +79,8 @@ app = func.FunctionApp()
 @app.function_name(name="wf_transcribe_HttpTrigger1")
 @app.route(route="wf_transcribe_HttpTrigger1")
 
+# @functions_framework.http
+# @expects_json(schema)
 def main(req: func.HttpRequest) -> func.HttpResponse:
     """HTTP Cloud Function.
     Args:
@@ -97,13 +99,14 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     request_json = req.get_json()
     CONFIG = Config(request_json)
     del request_json
-    context = {
+    context_json = {
         **CONFIG.context.toJson(),
         "instance": instance_id,
         "instance_run": run_counter,
         "request_recieved": request_recieved.isoformat(),
     }
-
+    logging.info(f'Received request: {context_json}')
+    
     account_url = CONFIG.context.storageaccounturl
     storage_client = BlobServiceClient(account_url=account_url, credential=DefaultAzureCredential())
 
