@@ -181,20 +181,22 @@ def main(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
     # PROBE remote file for audio information
     ##################################################### 
 
-    #### check and Install ffmpeg package #######
+    ##### check and Install ffmpeg package #######
     try:
-        # Check if FFmpeg is already installed
+        ### Check if FFmpeg is already installed
         check_ffmpeg_installed = "ffmpeg -version"
         subprocess.run(check_ffmpeg_installed, shell=True, check=True)
         logging.info("FFmpeg is already installed.")
     except subprocess.CalledProcessError:
-        # If FFmpeg is not installed, attempt to install it
+        ### If FFmpeg is not installed, attempt to install it
+        update_command = "apt-get update -y || yum update -y"
         install_command = "apt-get install -y ffmpeg || yum install -y ffmpeg"
         try:
+            subprocess.run(update_command, shell=True, check=True)
             subprocess.run(install_command, shell=True, check=True)
             logging.info("FFmpeg installed successfully.")
         except subprocess.CalledProcessError as e:
-            # Log the exception details
+            ### Log the exception details
             logging.exception("Error installing FFmpeg: %s", e)
 
     #############  PROBE remote file for audio information ####################
