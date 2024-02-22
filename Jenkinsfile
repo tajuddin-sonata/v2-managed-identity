@@ -15,19 +15,20 @@ pipeline {
         string(name: 'VERSION', description: 'Explicit version to deploy (i.e., "v0.1"). Leave blank to build latest commit')
         
         
-        string(name: 'AZURE_FUNCTION_NAME', defaultValue:'dev-wf-transcribe', description: '''The name of FunctionApp to deploy
-            dev-wf-transcribe 
-            stg-wf-transcribe 
-            prod-wf-transcribe ''' )
+        string(name: 'AZURE_FUNCTION_NAME', defaultValue:'dev-func-wftranscribe-sitl-eus', description: '''The name of FunctionApp to deploy
+            dev-func-wftranscribe-sitl-eus
+            stg-func-wftranscribe-sitl-eus
+            prod-func-wftranscribe-sitl-eus
+            ''' )
 
 
         /*
         string(name: 'AZURE_FUNCTION_ASP_NAME', defaultValue:'jenkins-ASP', description: '''The name of App service Plan for FunctionApp to deploy
             v2-functions-ASP
             jenkins-ASP
-            dev-wf-transcribe-ASP 
-            stg-wf-transcribe-ASP
-            prod-wf-transcribe-ASP''' )
+            dev-wf-configure-ASP 
+            stg-wf-configure-ASP
+            prod-wf-configure-ASP''' )
         
         
         string(name: 'FUNC_STORAGE_ACCOUNT_NAME', defaultValue:'v2funcappstg569650', description: '''select the existing Storage account name for Func App or create new .
@@ -51,8 +52,10 @@ pipeline {
             34b1c36e-d8e8-4bd5-a6f3-2f92a1c0626e
             70c3af66-8434-419b-b808-0b3c0c4b1a04''')
 
-        string(name: 'RESOURCE_GROUP_NAME', defaultValue:'jenkins-247-rg', description: ''' Azure Resource Group in which the FunctionApp need to deploy.
-            jenkins-247-rg
+        string(name: 'RESOURCE_GROUP_NAME', defaultValue:'tfs_rg_dev_eus_sitl', description: ''' Azure Resource Group in which the FunctionApp need to deploy.
+            tfs_rg_dev_eus_sitl   for dev
+            tfs_rg_stg_eus_sitl   for stage
+            tfs_rg_prod_eus_sitl  for prod
             ''')
         
         // string(name: 'PRIVATE_ENDPOINT_NAME', defaultValue:'jenkins-private-endpoint', description: ''' Private endpoint name.
@@ -102,7 +105,7 @@ pipeline {
         AZURE_CLIENT_ID = credentials('azurerm_client_id')
         AZURE_CLIENT_SECRET = credentials('azurerm_client_secret')
         AZURE_TENANT_ID = credentials('azurerm_tenant_id')
-        ZIP_FILE_NAME = "${params.AZURE_FUNCTION_NAME}"
+        FILE_PREFIX = "${params.ENVIRONMENT}"
         SONARQUBE_SCANNER_HOME = tool 'sonarscanner-5'
         functionAppId="/subscriptions/${params.SUBSCRIPTION}/resourceGroups/${params.RESOURCE_GROUP_NAME}/providers/Microsoft.Web/sites/${params.AZURE_FUNCTION_NAME}"
     }
@@ -117,7 +120,7 @@ pipeline {
             }
         }
 
-        
+
         /*
         stage('SonarQube Analysis') {
             steps {
@@ -127,12 +130,12 @@ pipeline {
                             echo "SonarQube Analysis"
                             
                             ${SONARQUBE_SCANNER_HOME}/bin/sonar-scanner \
-                                -Dsonar.projectKey=My-Transcribe-Project \
+                                -Dsonar.projectKey=My-Configure-Project \
                                 -Dsonar.host.url=http://4.240.69.23:9000 \
                                 -Dsonar.sources=src \
                                 -Dsonar.sourceEncoding=UTF-8 \
                                 -Dsonar.python.version=3.11
-                                -Dsonar.login=sqp_76718481b26452900254b93f8dca7633df356737
+                                -Dsonar.login=sqp_86c083368ec94f4237a7e8514b33f2d25a111748
                         """
                     }
                 }
@@ -257,22 +260,22 @@ pipeline {
                             artifact_version=\$(git describe --tags)
                             echo "\${artifact_version}" > src/version.txt
                             cd src
-                            zip -r "../$ZIP_FILE_NAME-\${artifact_version}.zip" *
+                            zip -r "../$FILE_PREFIX-ci-transcribe-\${artifact_version}.zip" *
                             cd $WORKSPACE
-                            echo "CREATED [$ZIP_FILE_NAME-\${artifact_version}.zip]"
+                            echo "CREATED [$FILE_PREFIX-ci-transcribe-\${artifact_version}.zip]"
                             curl -v -u nexus-user:nexus@123 --upload-file \
-                                "$ZIP_FILE_NAME-\${artifact_version}.zip" \
-                                "http://20.40.49.121:8081/repository/ci-config-service/$ZIP_FILE_NAME-\${artifact_version}.zip"
+                                "$FILE_PREFIX-ci-transcribe-\${artifact_version}.zip" \
+                                "http://74.225.187.237:8081/repository/packages/cca/$FILE_PREFIX-ci-transcribe-\${artifact_version}.zip"
                         else
                             artifact_version=$ver
                             echo "Downloading specified artifact version from Nexus..."
-                            curl -v -u nexus-user:nexus@123 -O "http://20.40.49.121:8081/repository/ci-config-service/$ZIP_FILE_NAME-\${artifact_version}.zip"
+                            curl -v -u nexus-user:nexus@123 -O "http://74.225.187.237:8081/repository/packages/cca/$FILE_PREFIX-ci-transcribe-\${artifact_version}.zip"
                         fi
-                        rm -rf "$ZIP_FILE_NAME-\${artifact_version}"
-                        unzip "$ZIP_FILE_NAME-\${artifact_version}.zip" -d "$ZIP_FILE_NAME-\${artifact_version}"
+                        rm -rf "$FILE_PREFIX-ci-transcribe-\${artifact_version}"
+                        unzip "$FILE_PREFIX-ci-transcribe-\${artifact_version}.zip" -d "$FILE_PREFIX-ci-transcribe-\${artifact_version}"
 
                         ls -ltr
-                        cd $ZIP_FILE_NAME-\${artifact_version}
+                        cd $FILE_PREFIX-ci-transcribe-\${artifact_version}
                         func azure functionapp publish ${params.AZURE_FUNCTION_NAME} --python
                     """
                 }
@@ -304,3 +307,4 @@ pipeline {
  
     }
 }
+
