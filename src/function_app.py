@@ -23,12 +23,12 @@ def main(event: func.EventGridEvent):
 
     if 'landing' in event.subject.lower():
 
-        logic_app_url = "https://cca-dev-logic-app-01.azurewebsites.net:443/api/Dev-Workflow1/triggers/StartLandingContainer/invoke?api-version=2022-05-01&sp=%2Ftriggers%2FStartLandingContainer%2Frun&sv=1.0&sig=ZdNLqnMVO_XOfokCBSNPFMb3fAGOb8NDl-DDCE0zosU"
+        logic_app_url = "$LOGICAPP_CALLBACK_URL"
 
         response = requests.post(logic_app_url, json=parsed_json)
 
-        if response.status_code == 200:
-            logging.info("Output sent to Logic App successfully.")
+        if response.status_code >= 200 and response.status_code < 300:
+            logging.info(f"Output sent to Logic App successfully. Status code: {response.status_code}, Response content: {response.text}")
         else:
             logging.info(f"Failed to send output to Logic App. Status code: {response.status_code}, Response content: {response.text}")
     else:
