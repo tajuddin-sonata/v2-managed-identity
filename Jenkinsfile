@@ -56,7 +56,7 @@ pipeline {
         AZURE_CLIENT_ID = credentials('azurerm_client_id')
         AZURE_CLIENT_SECRET = credentials('azurerm_client_secret')
         AZURE_TENANT_ID = credentials('azurerm_tenant_id')
-        ZIP_FILE_NAME = "${params.AZURE_LOGICAPP_NAME}"
+        FILE_PREFIX = "${params.ENVIRONMENT}"
         SONARQUBE_SCANNER_HOME = tool 'sonarscanner-5'
         logicAppResourceId="/subscriptions/${params.SUBSCRIPTION}/resourceGroups/${params.RESOURCE_GROUP_NAME}/providers/Microsoft.Web/sites/${params.AZURE_LOGICAPP_NAME}"
     }
