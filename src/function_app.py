@@ -108,7 +108,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     # - MKA (compressed audio)
     # - Video
 
-    ##### check and Install ffmpeg package #######
+    #### check and Install ffmpeg package #######
     try:
         ### Check if FFmpeg is already installed
         check_ffmpeg_installed = "ffmpeg -version"
@@ -116,8 +116,10 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         logging.info("FFmpeg is already installed.")
     except subprocess.CalledProcessError:
         ### If FFmpeg is not installed, attempt to install it
+        update_command = "apt-get update -y || yum update -y"
         install_command = "apt-get install -y ffmpeg || yum install -y ffmpeg"
         try:
+            subprocess.run(update_command, shell=True, check=True)
             subprocess.run(install_command, shell=True, check=True)
             logging.info("FFmpeg installed successfully.")
         except subprocess.CalledProcessError as e:
