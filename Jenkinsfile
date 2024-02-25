@@ -20,7 +20,7 @@ pipeline {
         
         string(name: 'VERSION', description: 'Explicit version to deploy (i.e., "v0.1"). Leave blank to build latest commit')
         
-        string(name: 'AZURE_FUNCTION_APP_NAME', defaultValue:'dev-func-wfconfigure-cca-eus', description: '''The name of FunctionApp to deploy
+        string(name: 'AZURE_FUNCTION_APP_NAME', defaultValue:'dev-func-wfconfigure-sitl-eus', description: '''The name of FunctionApp to deploy
             dev-func-wfconfigure-cca-eus   for dev env.
             stg-func-wfconfigure-cca-eus   for staging env.
             prd-func-wfconfigure-cca-eus   for production env.
@@ -229,6 +229,7 @@ pipeline {
 
                         ls -ltr
                         cd $FILE_PREFIX-ci-configurator-\${artifact_version}
+                        ls -ltr
                         func azure functionapp publish ${params.AZURE_FUNCTION_APP_NAME} --python
                     """
                 }
