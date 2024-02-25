@@ -2,147 +2,100 @@ def artifact_version
 
 pipeline {
     agent {
-        label 'jenkins-slave'
+        label 'GCP-jenkins-worker04'
     }
 
     parameters{
         choice(name: 'ENVIRONMENT', choices:[
             'dev',
             'stg',
-            'prod'],
+            'prd'],
             description: 'Choose which environment to deploy to.')
+
+        string(name: 'SUBSCRIPTION', defaultValue:'48986b2e-5349-4fab-a6e8-d5f02072a4b8', description: ''' select subscription as:
+            48986b2e-5349-4fab-a6e8-d5f02072a4b8    for dev env.
+            34b1c36e-d8e8-4bd5-a6f3-2f92a1c0626e    for staging env.
+            70c3af66-8434-419b-b808-0b3c0c4b1a04    for production env.
+            ''')
         
         string(name: 'VERSION', description: 'Explicit version to deploy (i.e., "v0.1"). Leave blank to build latest commit')
         
-        
-        string(name: 'AZURE_FUNCTION_NAME', defaultValue:'dev-func-wftranscribe-sitl-eus', description: '''The name of FunctionApp to deploy
-            dev-func-wftranscribe-sitl-eus
-            stg-func-wftranscribe-sitl-eus
-            prod-func-wftranscribe-sitl-eus
+        string(name: 'AZURE_FUNCTION_APP_NAME', defaultValue:'dev-func-wftranscribe-sitl-eus', description: '''The name of FunctionApp to deploy
+            dev-func-wftranscribe-cca-eus   for dev env.
+            stg-func-wftranscribe-cca-eus   for staging env.
+            prd-func-wftranscribe-cca-eus   for production env.
             ''' )
 
+        string(name: 'RESOURCE_GROUP_NAME', defaultValue:'tfs_rg_dev_eus_sitl', description: ''' Azure Resource Group in which the FunctionApp need to deploy.
+            tfs_rg_dev_eus_sitl   for dev
+            tfs_rg_stg_eus_sitl   for stage
+            tfs_rg_prd_eus_sitl  for prod
+            ''')
 
         /*
-        string(name: 'AZURE_FUNCTION_ASP_NAME', defaultValue:'jenkins-ASP', description: '''The name of App service Plan for FunctionApp to deploy
-            v2-functions-ASP
-            jenkins-ASP
-            dev-wf-configure-ASP 
-            stg-wf-configure-ASP
-            prod-wf-configure-ASP''' )
+        string(name: 'AZURE_FUNCTION_ASP_NAME', defaultValue:'', description: '''The name of App service Plan for FunctionApp to deploy
+            tfsfunctionappservice
+            ''' )
         
         
-        string(name: 'FUNC_STORAGE_ACCOUNT_NAME', defaultValue:'v2funcappstg569650', description: '''select the existing Storage account name for Func App or create new .
-            v2funcappstg569650
-            ccadevfunctionappstgacc 
+        string(name: 'FUNC_STORAGE_ACCOUNT_NAME', defaultValue:'', description: '''select the Storage account name for Func App.
             ''' )
 
-        string(name: 'AZURE_APP_INSIGHTS_NAME', defaultValue:'v2-func-app-insight', description: '''The name of Existing Application insight for FunctionApp.
-            v2-func-app-insight
+        string(name: 'AZURE_APP_INSIGHTS_NAME', defaultValue:'', description: '''The name of Existing Application insight for FunctionApp.
             ''' )
-
 
         string(name: 'REGION', defaultValue:'Central India',  description: '''Region to Deploy to.
         eastus, eastus2, westus, westus2, 
         southindia, centralindia, westindia''')
 
-        */
-
-        string(name: 'SUBSCRIPTION', defaultValue:'48986b2e-5349-4fab-a6e8-d5f02072a4b8', description: ''' select subscription as:
-            48986b2e-5349-4fab-a6e8-d5f02072a4b8
-            34b1c36e-d8e8-4bd5-a6f3-2f92a1c0626e
-            70c3af66-8434-419b-b808-0b3c0c4b1a04''')
-
-        string(name: 'RESOURCE_GROUP_NAME', defaultValue:'tfs_rg_dev_eus_sitl', description: ''' Azure Resource Group in which the FunctionApp need to deploy.
-            tfs_rg_dev_eus_sitl   for dev
-            tfs_rg_stg_eus_sitl   for stage
-            tfs_rg_prod_eus_sitl  for prod
-            ''')
-        
-        // string(name: 'PRIVATE_ENDPOINT_NAME', defaultValue:'jenkins-private-endpoint', description: ''' Private endpoint name.
-        //     jenkins-private-endpoint
-        //     ''')
-
-        // string(name: 'PRIVATE_CONNECTION_NAME', defaultValue:'jenkins-privateend-connection', description: ''' Private endpoint Connection name.
-        //     jenkins-privateend-connection
-        //     ''')
-
-
-        /*
-        string(name: 'VNET_NAME', defaultValue:'jenkins-vm-vnet', description: ''' Vnet name for Private endpoint connection & Vnet integration.
-            jenkins-vm-vnet
+        string(name: 'PRIVATE_ENDPOINT_NAME', defaultValue:'', description: ''' Select the Private endpoint name. 
             ''')
 
-        string(name: 'INBOUND_SNET_NAME', defaultValue:'jenkins-inbound-subnet', description: ''' Inbound Subnet name for Private endpoint connection.
-            jenkins-inbound-subnet
-            jenkins-subnet
+        string(name: 'PRIVATE_CONNECTION_NAME', defaultValue:'', description: ''' Select the Private endpoint Connection name.
             ''')
 
-        // string(name: 'OUTBOUND_VNET_NAME', description: ''' Outbound Vnet name for Vnet integration.
-        //     jenkins-vm-vnet
-        //     ''')
+        string(name: 'VNET_NAME', defaultValue:'', description: ''' Vnet name for Private endpoint connection & Vnet integration.
+            ''')
 
-        string(name: 'OUTBOUND_SNET_NAME', defaultValue:'jenkins-outbound-subnet', description: ''' Outbound Subnet name for Private endpoint connection.
-            jenkins-outbound-subnet
-            jenkins-subnet-01
+        string(name: 'INBOUND_SNET_NAME', defaultValue:'', description: ''' Inbound Subnet name for Private endpoint connection.
+            ''')
+
+        string(name: 'OUTBOUND_SNET_NAME', defaultValue:'', description: ''' Outbound Subnet name for Private endpoint connection.
             ''')
 
         choice(name: 'SKU', choices:[
+            'P1V3','P2V3', 'P3V3',
             'S3','S1', 'S2',
-            'B1', 'B2', 'B3', 
-            'P1V3','P2V3', 'P3V3'], 
-            description: 'ASP SKU.')
+            'B1', 'B2', 'B3'], 
+            description: 'App service plan  SKU.')
 
         choice(name: 'PYTHON_RUNTIME_VERSION', choices:[
-            '3.9',
+            '3.11',
             '3.10',
-            '3.11'],
+            '3.9'],
             description: 'Python runtime version.')
-
         */
+
     }
 
     environment {
-        AZURE_CLIENT_ID = credentials('azurerm_client_id')
-        AZURE_CLIENT_SECRET = credentials('azurerm_client_secret')
-        AZURE_TENANT_ID = credentials('azurerm_tenant_id')
-        FILE_PREFIX = "${params.ENVIRONMENT}"
-        SONARQUBE_SCANNER_HOME = tool 'sonarscanner-5'
-        functionAppId="/subscriptions/${params.SUBSCRIPTION}/resourceGroups/${params.RESOURCE_GROUP_NAME}/providers/Microsoft.Web/sites/${params.AZURE_FUNCTION_NAME}"
+        AZURE_CLIENT_ID = credentials("az_cca_${params.ENVIRONMENT}_client_id")
+        AZURE_CLIENT_SECRET = credentials("az_cca_${params.ENVIRONMENT}_secret_value")
+        AZURE_TENANT_ID = credentials("az_cca_${params.ENVIRONMENT}_tenant_id")
+
+        FILE_PREFIX = "${params.ENVIRONMENT}-az"
+        functionAppId="/subscriptions/${params.SUBSCRIPTION}/resourceGroups/${params.RESOURCE_GROUP_NAME}/providers/Microsoft.Web/sites/${params.AZURE_FUNCTION_APP_NAME}"
     }
 
     stages {
 
         stage('Checkout') {
             steps {
-                // checkout scm
-                git branch: 'feature/wf_transcribe', url: 'https://github.com/tajuddin-sonata/v2-managed-identity.git'
+                checkout scm
+                // git branch: 'feature/wf_transcribe', url: 'https://github.com/tajuddin-sonata/v2-managed-identity.git'
 
             }
         }
-
-
-        /*
-        stage('SonarQube Analysis') {
-            steps {
-                withSonarQubeEnv('sonarqube-9.9') {
-                    script {
-                        sh """
-                            echo "SonarQube Analysis"
-                            
-                            ${SONARQUBE_SCANNER_HOME}/bin/sonar-scanner \
-                                -Dsonar.projectKey=My-Configure-Project \
-                                -Dsonar.host.url=http://4.240.69.23:9000 \
-                                -Dsonar.sources=src \
-                                -Dsonar.sourceEncoding=UTF-8 \
-                                -Dsonar.python.version=3.11
-                                -Dsonar.login=sqp_86c083368ec94f4237a7e8514b33f2d25a111748
-                        """
-                    }
-                }
-            }
-        }
-        */
-
 
         stage('SonarQube Analysis') {
             steps {
@@ -194,7 +147,6 @@ pipeline {
                     if (nodeVersion != 0) {
                         echo "Node.js is not installed, installing now..."
                         // Install Node.js
-                        // sh 'curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -'
                         sh 'sudo yum install -y nodejs'
                     } else {
                         def node_installedVersion = sh(script: 'node -v', returnStdout: true).trim()
@@ -227,23 +179,22 @@ pipeline {
                 // sh "az appservice plan create --name ${params.AZURE_FUNCTION_ASP_NAME} --resource-group ${params.RESOURCE_GROUP_NAME} --sku ${params.SKU} --is-linux --location ${params.REGION}"
                 
                 // Create FunctionApp
-                sh "az functionapp create --name ${params.AZURE_FUNCTION_NAME} --resource-group ${params.RESOURCE_GROUP_NAME} --plan ${params.AZURE_FUNCTION_ASP_NAME} --runtime python --runtime-version ${params.PYTHON_RUNTIME_VERSION} --functions-version 4 --storage-account ${params.FUNC_STORAGE_ACCOUNT_NAME} --app-insights ${params.AZURE_APP_INSIGHTS_NAME}"
+                sh "az functionapp create --name ${params.AZURE_FUNCTION_APP_NAME} --resource-group ${params.RESOURCE_GROUP_NAME} --plan ${params.AZURE_FUNCTION_ASP_NAME} --runtime python --runtime-version ${params.PYTHON_RUNTIME_VERSION} --functions-version 4 --storage-account ${params.FUNC_STORAGE_ACCOUNT_NAME} --app-insights ${params.AZURE_APP_INSIGHTS_NAME}"
                 
                 // Vnet Integration
-                sh "az functionApp vnet-integration add -g ${params.RESOURCE_GROUP_NAME} -n ${params.AZURE_FUNCTION_NAME} --vnet ${params.VNET_NAME} --subnet ${params.OUTBOUND_SNET_NAME}"
+                sh "az functionApp vnet-integration add -g ${params.RESOURCE_GROUP_NAME} -n ${params.AZURE_FUNCTION_APP_NAME} --vnet ${params.VNET_NAME} --subnet ${params.OUTBOUND_SNET_NAME}"
                 
                 // Enabling Private end points
-                sh "az network private-endpoint create -g ${params.RESOURCE_GROUP_NAME} -n ${params.AZURE_FUNCTION_NAME}-private-endpoint --vnet-name ${params.VNET_NAME} --subnet ${params.INBOUND_SNET_NAME} --private-connection-resource-id $functionAppId --connection-name ${params.AZURE_FUNCTION_NAME}-private-connection -l '${params.REGION}' --group-id sites"
+                sh "az network private-endpoint create -g ${params.RESOURCE_GROUP_NAME} -n ${params.AZURE_FUNCTION_APP_NAME}-private-endpoint --vnet-name ${params.VNET_NAME} --subnet ${params.INBOUND_SNET_NAME} --private-connection-resource-id $functionAppId --connection-name ${params.AZURE_FUNCTION_APP_NAME}-private-connection -l '${params.REGION}' --group-id sites"
 
                 // Create PrivateDNS Zone
                 sh "az network private-dns zone create -g ${params.RESOURCE_GROUP_NAME} -n privatelink.azurewebsites.net"
 
                 // Link Vnet to Private DNS Zone
-                sh "az network private-dns link vnet create --name ${params.AZURE_FUNCTION_NAME}-dns-link --registration-enabled true --resource-group ${params.RESOURCE_GROUP_NAME} --virtual-network ${params.VNET_NAME} --zone-name privatelink.azurewebsites.net"
+                sh "az network private-dns link vnet create --name ${params.AZURE_FUNCTION_APP_NAME}-dns-link --registration-enabled true --resource-group ${params.RESOURCE_GROUP_NAME} --virtual-network ${params.VNET_NAME} --zone-name privatelink.azurewebsites.net"
 
                 // Link Private Endpoint to Private DNS Zone
-                // az network private-endpoint dns-zone-group add --endpoint-name MyPE -g saurav -n functionapp --zone-name "privatelink.azurewebsites.net"
-                sh "az network private-endpoint dns-zone-group create --endpoint-name ${params.AZURE_FUNCTION_NAME}-private-endpoint -g ${params.RESOURCE_GROUP_NAME} -n ${params.AZURE_FUNCTION_NAME}-dns-config --zone-name default --private-dns-zone privatelink.azurewebsites.net" 
+                sh "az network private-endpoint dns-zone-group create --endpoint-name ${params.AZURE_FUNCTION_APP_NAME}-private-endpoint -g ${params.RESOURCE_GROUP_NAME} -n ${params.AZURE_FUNCTION_APP_NAME}-dns-config --zone-name default --private-dns-zone privatelink.azurewebsites.net" 
             }
         }
         */
@@ -253,6 +204,8 @@ pipeline {
                 script {
                     echo "Deploy artifact to Nexus & Azure !!!"
                     def ver = params.VERSION
+                    sh 'az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID'
+                    sh "az account set --subscription ${params.SUBSCRIPTION}"
                     sh """
                         #!/bin/bash
                 
@@ -263,20 +216,21 @@ pipeline {
                             zip -r "../$FILE_PREFIX-ci-transcribe-\${artifact_version}.zip" *
                             cd $WORKSPACE
                             echo "CREATED [$FILE_PREFIX-ci-transcribe-\${artifact_version}.zip]"
-                            curl -v -u nexus-user:nexus@123 --upload-file \
+                            curl -v -u deployment:deployment123 --upload-file \
                                 "$FILE_PREFIX-ci-transcribe-\${artifact_version}.zip" \
-                                "http://74.225.187.237:8081/repository/packages/cca/$FILE_PREFIX-ci-transcribe-\${artifact_version}.zip"
+                                "http://74.225.187.237:8081/repository/packages/cca/ci-config-service/$FILE_PREFIX-ci-transcribe-\${artifact_version}.zip"
                         else
                             artifact_version=$ver
                             echo "Downloading specified artifact version from Nexus..."
-                            curl -v -u nexus-user:nexus@123 -O "http://74.225.187.237:8081/repository/packages/cca/$FILE_PREFIX-ci-transcribe-\${artifact_version}.zip"
+                            curl -v -u deployment:deployment123 -O "http://74.225.187.237:8081/repository/packages/cca/ci-config-service/$FILE_PREFIX-ci-transcribe-\${artifact_version}.zip"
                         fi
                         rm -rf "$FILE_PREFIX-ci-transcribe-\${artifact_version}"
                         unzip "$FILE_PREFIX-ci-transcribe-\${artifact_version}.zip" -d "$FILE_PREFIX-ci-transcribe-\${artifact_version}"
 
                         ls -ltr
                         cd $FILE_PREFIX-ci-transcribe-\${artifact_version}
-                        func azure functionapp publish ${params.AZURE_FUNCTION_NAME} --python
+                        ls -ltr
+                        func azure functionapp publish ${params.AZURE_FUNCTION_APP_NAME} --python
                     """
                 }
             }
@@ -299,7 +253,7 @@ pipeline {
 
                     sh """
                     ls -ltr
-                    func azure functionapp publish ${params.AZURE_FUNCTION_NAME} --python
+                    func azure functionapp publish ${params.AZURE_FUNCTION_APP_NAME} --python
                     """
                 }
             }
