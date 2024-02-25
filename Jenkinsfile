@@ -204,6 +204,8 @@ pipeline {
                 script {
                     echo "Deploy artifact to Nexus & Azure !!!"
                     def ver = params.VERSION
+                    sh 'az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID'
+                    sh "az account set --subscription ${params.SUBSCRIPTION}"
                     sh """
                         #!/bin/bash
                 
