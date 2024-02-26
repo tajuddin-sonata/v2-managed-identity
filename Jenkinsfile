@@ -20,16 +20,16 @@ pipeline {
         
         string(name: 'VERSION', description: 'Explicit version to deploy (i.e., "v0.1"). Leave blank to build latest commit')
         
-        string(name: 'AZURE_FUNCTION_APP_NAME', defaultValue:'dev-func-wfanalyse-sitl-eus', description: '''The name of FunctionApp to deploy
-            dev-func-wfanalyse-cca-eus   for dev env.
-            stg-func-wfanalyse-cca-eus   for staging env.
-            prd-func-wfanalyse-cca-eus   for production env.
+        string(name: 'AZURE_FUNCTION_APP_NAME', defaultValue:'ssna-func-cca-dev-eus-wfanalyse', description: '''The name of FunctionApp to deploy
+            ssna-func-cca-dev-eus-wfanalyse   for dev env.
+            ssna-func-cca-stg-eus-wfanalyse   for staging env.
+            ssna-func-cca-prd-eus-wfanalyse   for production env.
             ''' )
 
-        string(name: 'RESOURCE_GROUP_NAME', defaultValue:'tfs_rg_dev_eus_sitl', description: ''' Azure Resource Group in which the FunctionApp need to deploy.
-            tfs_rg_dev_eus_sitl   for dev
-            tfs_rg_stg_eus_sitl   for stage
-            tfs_rg_prd_eus_sitl  for prod
+        string(name: 'RESOURCE_GROUP_NAME', defaultValue:'ssna-rg-cca-dev-eus', description: ''' Azure Resource Group in which the FunctionApp need to deploy.
+            ssna-rg-cca-dev-eus   for dev
+            ssna-rg-cca-stg-eus   for stage
+            ssna-rg-cca-prd-eus  for prod
             ''')
 
         /*
@@ -91,8 +91,8 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                checkout scm
-                // git branch: 'feature/wf_analyse', url: 'https://github.com/tajuddin-sonata/v2-managed-identity.git'
+                // checkout scm
+                git branch: 'feature/wf_analyse', url: 'https://github.com/tajuddin-sonata/v2-managed-identity.git'
 
             }
         }
