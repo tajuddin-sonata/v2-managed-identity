@@ -27,8 +27,8 @@ def main(event: func.EventGridEvent):
 
         response = requests.post(logic_app_url, json=parsed_json)
 
-        if response.status_code >= 200 and response.status_code < 300:
-            logging.info(f"Output sent to Logic App successfully. Status code: {response.status_code}, Response content: {response.text}")
+        if response.status_code >= 200 and response.status_code <= 202:
+            logging.info(f"Output sent to Logic App successfully. Status code: {response.status_code}")
         else:
             logging.info(f"Failed to send output to Logic App. Status code: {response.status_code}, Response content: {response.text}")
     else:
