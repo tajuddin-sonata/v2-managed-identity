@@ -91,8 +91,8 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                checkout scm
-                // git branch: 'feature/wf_redact', url: 'https://github.com/tajuddin-sonata/v2-managed-identity.git'
+                // checkout scm
+                git branch: 'feature/wf_redact', url: 'https://github.com/tajuddin-sonata/v2-managed-identity.git'
 
             }
         }
