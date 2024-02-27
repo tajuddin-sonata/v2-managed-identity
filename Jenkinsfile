@@ -20,10 +20,10 @@ pipeline {
         
         string(name: 'VERSION', description: 'Explicit version to deploy (i.e., "v0.1"). Leave blank to build latest commit')
         
-        string(name: 'AZURE_FUNCTION_APP_NAME', defaultValue:'ssna-func-cca-dev-eus-wfanalyse', description: '''The name of FunctionApp to deploy
-            ssna-func-cca-dev-eus-wfanalyse   for dev env.
-            ssna-func-cca-stg-eus-wfanalyse   for staging env.
-            ssna-func-cca-prd-eus-wfanalyse   for production env.
+        string(name: 'AZURE_FUNCTION_APP_NAME', defaultValue:'ssna-func-cca-dev-eastus-wfanalyse', description: '''The name of FunctionApp to deploy
+            ssna-func-cca-dev-eastus-wfanalyse   for dev env.
+            ssna-func-cca-stg-eastus-wfanalyse   for staging env.
+            ssna-func-cca-prd-eastus-wfanalyse   for production env.
             ''' )
 
         string(name: 'RESOURCE_GROUP_NAME', defaultValue:'ssna-rg-cca-dev-eus', description: ''' Azure Resource Group in which the FunctionApp need to deploy.
