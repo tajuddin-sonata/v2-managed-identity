@@ -138,10 +138,6 @@ async def main(req: func.HttpRequest, context: func.Context) -> func.HttpRespons
 
     if not ("metadata" in transcript and "media" in transcript["metadata"]
         and transcript["metadata"]["media"]["media_type"]=="voice"):
-        # Log metadata for debugging 
-        logging.info("Transcript metadata found: %s", transcript.get("metadata"))
-        logging.warning("Transcript represents voice media_type. Skipping spellcheck as Spellcheck condition not met.")
-        ## Do spellcheck if spellcheck condition is met
         transcript, out_files["spellchecked_transcript"] = await do_spellcheck(
             CONFIG, transcript
         )

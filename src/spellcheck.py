@@ -9,7 +9,12 @@ from time import time
 import os
 import logging
 
-#TODO Remove termcolor after debug
+import asyncio
+import concurrent.futures
+import re
+from functools import reduce
+
+# TODO Remove termcolor after debug
 # from termcolor import colored, cprint
 
 class Options:
@@ -22,6 +27,7 @@ spell=None
 # add_words_loc = 'spellchecker/add_words.json'
 # remove_words_loc = 'spellchecker/remove_words.json'
 
+# remove_words_loc = os.path.join(os.path.dirname(__file__), 'remove_words.json')
 remove_words_loc = os.path.join(os.path.dirname(__file__), 'spellchecker', 'remove_words.json')
 
 # VARIABLES for cleaning text: ========================
@@ -37,7 +43,7 @@ re_has_digits='[0-9]'
 minSpellCheckCharLength = 4
 #=====================================================
 
-def spellcheck(normalised, options):
+async def spellcheck(normalised, options):
     global spell       
     opts = Options(options)
     instantiate_time = 0
@@ -59,9 +65,14 @@ def spellcheck(normalised, options):
     logging.info(f"Spellchecker instantiated in {instantiate_time} seconds")
     logging.info("Current Working Directory: %s", os.getcwd())
     
-    for turn in normalised["turns_array"]:
+    loop = asyncio.get_event_loop()
+    with concurrent.futures.ThreadPoolExecutor() as pool:
+        tasks = [loop.run_in_executor(pool, clean_turn_text, turn["turn_text"]) for turn in normalised["turns_array"]]
+        cleaned_results = await asyncio.gather(*tasks)
+    
+    for turn, cleaned in zip(normalised["turns_array"], cleaned_results):
         text = turn["turn_text"]
-        cleaned = clean_turn_text(text)
+        turn["cleaned_text"] = cleaned
         turn = correct_turn(turn=turn, cleaned=cleaned)
 
     logging.info("Spellcheck completed successfully")
