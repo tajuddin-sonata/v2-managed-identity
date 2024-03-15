@@ -1,6 +1,6 @@
 pipeline {
     agent {
-        label 'jenkins-slave'
+        label 'GCP-jenkins-worker04'
     }
 
     parameters{
