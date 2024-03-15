@@ -9,7 +9,7 @@ pipeline {
         choice(name: 'ENVIRONMENT', choices:[
             'dev',
             'stg',
-            'prd'],
+            'prod'],
             description: 'Choose which environment to deploy to.')
 
         string(name: 'SUBSCRIPTION', defaultValue:'48986b2e-5349-4fab-a6e8-d5f02072a4b8', description: ''' select subscription as:
@@ -20,16 +20,16 @@ pipeline {
         
         string(name: 'VERSION', description: 'Explicit version to deploy (i.e., "v0.1"). Leave blank to build latest commit')
         
-        string(name: 'AZURE_FUNCTION_APP_NAME', defaultValue:'ssna-func-cca-dev-eastus-wfconfigure', description: '''The name of FunctionApp to deploy
-            ssna-func-cca-dev-eastus-wfconfigure   for dev env.
-            ssna-func-cca-stg-eastus-wfconfigure   for staging env.
-            ssna-func-cca-prd-eus-wfconfigure   for production env.
+        string(name: 'AZURE_FUNCTION_APP_NAME', defaultValue:'ssna-func-cca-prod-eus-wfconfigure', description: '''The name of FunctionApp to deploy
+            ssna-func-cca-dev-eus-wfconfigure   for dev env.
+            ssna-func-cca-stg-eus-wfconfigure   for staging env.
+            ssna-func-cca-prod-eus-wfconfigure   for production env.
             ''' )
 
-        string(name: 'RESOURCE_GROUP_NAME', defaultValue:'ssna-rg-cca-dev-eus', description: ''' Azure Resource Group in which the FunctionApp need to deploy.
-            ssna-rg-cca-dev-eus   for dev
-            ssna-rg-cca-stg-eus   for stage
-            ssna-rg-cca-prd-eus  for prod
+        string(name: 'RESOURCE_GROUP_NAME', defaultValue:'sitl-rg-prod-eus-cca', description: ''' Azure Resource Group in which the FunctionApp need to deploy.
+            sitl-rg-dev-eus-cca    for dev
+            sitl-rg-stg-eus-cca    for stage
+            sitl-rg-prod-eus-cca    for prod
             ''')
 
         /*
@@ -106,14 +106,14 @@ pipeline {
             }
         }
 
-        /*
+
         stage ('Quality Gate') {
             steps {
                 script {
                     echo "Quality Gate Check"
                     timeout(time: 1, unit: 'HOURS') {
                         def qg = waitForQualityGate()
-                        if (dq.status != 'OK') {
+                        if (qg.status != 'OK') {
                             error "Pipeline aborted due to quality failure: ${qg.status}"
                             currentBuild.result = 'FAILURE'
 
@@ -122,9 +122,9 @@ pipeline {
                 }
             }
         }
-        */
 
 
+        /*
         stage('Check/install Azure Tools') {
             steps {
                 script {
@@ -166,7 +166,7 @@ pipeline {
                 }
             }
         }
-
+        */
 
         /*
         stage('Create FunctionApp') {
@@ -213,52 +213,28 @@ pipeline {
                             artifact_version=\$(git describe --tags)
                             echo "\${artifact_version}" > src/version.txt
                             cd src
-                            zip -r "../$FILE_PREFIX-ci-configurator-\${artifact_version}.zip" *
+                            zip -r "../az-ci-configurator-\${artifact_version}.zip" *
                             cd $WORKSPACE
-                            echo "CREATED [$FILE_PREFIX-ci-configurator-\${artifact_version}.zip]"
+                            echo "CREATED [az-ci-configurator-\${artifact_version}.zip]"
                             curl -v -u deployment:deployment123 --upload-file \
-                                "$FILE_PREFIX-ci-configurator-\${artifact_version}.zip" \
-                                "http://74.225.187.237:8081/repository/packages/cca/ci-config-service/$FILE_PREFIX-ci-configurator-\${artifact_version}.zip"
+                                "az-ci-configurator-\${artifact_version}.zip" \
+                                "http://74.225.187.237:8081/repository/packages/cca/ci-config-service/az-ci-configurator-\${artifact_version}.zip"
                         else
                             artifact_version=$ver
                             echo "Downloading specified artifact version from Nexus..."
-                            curl -v -u deployment:deployment123 -O "http://74.225.187.237:8081/repository/packages/cca/ci-config-service/$FILE_PREFIX-ci-configurator-\${artifact_version}.zip"
+                            curl -v -u deployment:deployment123 -O "http://74.225.187.237:8081/repository/packages/cca/ci-config-service/az-ci-configurator-\${artifact_version}.zip"
                         fi
-                        rm -rf "$FILE_PREFIX-ci-configurator-\${artifact_version}"
-                        unzip "$FILE_PREFIX-ci-configurator-\${artifact_version}.zip" -d "$FILE_PREFIX-ci-configurator-\${artifact_version}"
+                        rm -rf "az-ci-configurator-\${artifact_version}"
+                        unzip "az-ci-configurator-\${artifact_version}.zip" -d "az-ci-configurator-\${artifact_version}"
 
                         ls -ltr
-                        cd $FILE_PREFIX-ci-configurator-\${artifact_version}
+                        cd az-ci-configurator-\${artifact_version}
                         ls -ltr
                         func azure functionapp publish ${params.AZURE_FUNCTION_APP_NAME} --python
                     """
                 }
             }
         }
-
-        /*
-        stage('Deploy Code to Azure Function App') {
-            steps {
-                script {
-
-
-                    // // install azure-functions-core-tools install
-                    // wget https://github.com/Azure/azure-functions-core-tools/releases/download/4.0.5455/Azure.Functions.Cli.linux-x64.4.0.5455.zip
-                    // unzip -o -d azure-functions-cli Azure.Functions.Cli.linux-x64.*.zip
-                    // cd azure-functions-cli
-                    // chmod +x func
-                    // chmod +x gozip
-                    // export PATH=`pwd`:$PATH
-                    // cd ..
-
-                    sh """
-                    ls -ltr
-                    func azure functionapp publish ${params.AZURE_FUNCTION_APP_NAME} --python
-                    """
-                }
-            }
-        } */
- 
     }
 }
 
