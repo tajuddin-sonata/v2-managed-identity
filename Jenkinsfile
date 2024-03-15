@@ -45,7 +45,32 @@ pipeline {
             }
         }
 
+        stage('SonarQube Analysis') {
+            steps {
+                echo "SonarQube Analysis !!"
+                withSonarQubeEnv('sonarqube-9.9') {
+                    sh '/opt/sonarscanner/bin/sonar-scanner'
+                }
+            }
+        }
 
+        /*
+        stage ('Quality Gate') {
+            steps {
+                script {
+                    echo "Quality Gate Check"
+                    timeout(time: 1, unit: 'HOURS') {
+                        def qg = waitForQualityGate()
+                        if (dq.status != 'OK') {
+                            error "Pipeline aborted due to quality failure: ${qg.status}"
+                            currentBuild.result = 'FAILURE'
+
+                        }
+                    }
+                }
+            }
+        }
+        */
 
         stage('Deploy artifacts to Nexus & Azure') {
             steps {
