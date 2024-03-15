@@ -20,19 +20,19 @@ pipeline {
         
         string(name: 'VERSION', description: 'Explicit version to deploy (i.e., "v0.1"). Leave blank to build latest commit')
         
-        string(name: 'AZURE_FUNCTION_APP_NAME', defaultValue:'ssna-func-cca-prod-eus-wfconfigure', description: '''The name of FunctionApp to deploy
+        string(name: 'AZURE_FUNCTION_APP_NAME', defaultValue:'ssna-func-cca-dev-eus-wfconfigure', description: '''The name of FunctionApp to deploy
             ssna-func-cca-dev-eus-wfconfigure   for dev env.
             ssna-func-cca-stg-eus-wfconfigure   for staging env.
             ssna-func-cca-prod-eus-wfconfigure   for production env.
             ''' )
-
-        string(name: 'RESOURCE_GROUP_NAME', defaultValue:'sitl-rg-prod-eus-cca', description: ''' Azure Resource Group in which the FunctionApp need to deploy.
+        /*
+        string(name: 'RESOURCE_GROUP_NAME', defaultValue:'sitl-rg-dev-eus-cca', description: ''' Azure Resource Group in which the FunctionApp need to deploy.
             sitl-rg-dev-eus-cca    for dev
             sitl-rg-stg-eus-cca    for stage
             sitl-rg-prod-eus-cca    for prod
             ''')
 
-        /*
+        
         string(name: 'AZURE_FUNCTION_ASP_NAME', defaultValue:'', description: '''The name of App service Plan for FunctionApp to deploy
             tfsfunctionappservice
             ''' )
