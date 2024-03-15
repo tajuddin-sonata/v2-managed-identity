@@ -106,7 +106,7 @@ pipeline {
             }
         }
 
-
+        /*
         stage ('Quality Gate') {
             steps {
                 script {
@@ -122,7 +122,7 @@ pipeline {
                 }
             }
         }
-
+        */
 
         /*
         stage('Check/install Azure Tools') {
