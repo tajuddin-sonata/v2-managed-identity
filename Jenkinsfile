@@ -10,25 +10,20 @@ pipeline {
             'prod'],
             description: 'Choose which environment to deploy to.')
         
-        string(name: 'VERSION', description: 'Explicit version to deploy (i.e., "v0.1-51-g87b72a"). Leave blank to build latest commit')
+        string(name: 'VERSION', description: 'Explicit version to deploy (i.e., "v0.1"). Leave blank to build latest commit')
         
 
-        string(name: 'AZURE_FUNCTION_NAME', defaultValue:'dev-func-wftrigger-sitl-eus', description: '''The name of FunctionApp to deploy
-            dev-func-wftrigger-sitl-eus
-            stg-func-wftrigger-sitl-eus
-            prod-func-wftrigger-sitl-eus
+        string(name: 'AZURE_FUNCTION_NAME', defaultValue:'ssna-func-cca-dev-eus-wftrigger', description: '''The name of FunctionApp to deploy
+            ssna-func-cca-dev-eus-wftrigger
+            ssna-func-cca-stg-eus-wftrigger
+            ssna-func-cca-prod-eus-wftrigger
             ''' )
 
         
-        string(name: 'AZURE_LOGICAPP_NAME', defaultValue:'dev-logicapp-sitl-eus', description: '''The name of LogicApp to deploy
-            dev-logicapp-sitl-eus
-            stg-logicapp-sitl-eus
-            prod-logicapp-sitl-eus''' )
-
-
-        // string(name: 'REGION', defaultValue:'centralindia', description: '''Region to Deploy to. 
-        //     centralindia
-        //     eastus''')
+        string(name: 'AZURE_LOGICAPP_NAME', defaultValue:'ssna-logicapp-cca-dev-eastus', description: '''The name of LogicApp to deploy
+            ssna-logicapp-cca-dev-eastus
+            ssna-logicapp-cca-stg-eastus
+            ssna-logicapp-cca-prod-eastus''' )
 
 
         string(name: 'SUBSCRIPTION', defaultValue:'48986b2e-5349-4fab-a6e8-d5f02072a4b8', description: ''' select subscription as:
@@ -36,14 +31,15 @@ pipeline {
             34b1c36e-d8e8-4bd5-a6f3-2f92a1c0626e
             70c3af66-8434-419b-b808-0b3c0c4b1a04''')
 
-        string(name: 'RESOURCE_GROUP_NAME', defaultValue:'tfs_rg_dev_eus_sitl', description: ''' Azure Resource Group in which the FunctionApp need to deploy.
-            tfs_rg_dev_eus_sitl
-            tfs_rg_stg_eus_sitl
-            tfs_rg_prod_eus_sitl
+        string(name: 'RESOURCE_GROUP_NAME', defaultValue:'sitl-rg-dev-eus-cca', description: ''' Azure Resource Group in which the FunctionApp need to deploy.
+            sitl-rg-dev-eus-cca
+            sitl-rg-stg-eus-cca
+            sitl-rg-prod-eus-cca
             ''')
 
-        string(name: 'WORKFLOW_NAME', defaultValue:'workflow1', description: ''' LogicApp Workflow name.
-            Workflow1
+        string(name: 'WORKFLOW_NAME', defaultValue:'STT-Workflow', description: ''' LogicApp Workflow name.
+            STT-Workflow
+            Trial-Deepgram-Workflow
             ''')
 
         string(name: 'WORKFLOW_TRIGGER_NAME', defaultValue:'StartLandingContainer', description: ''' Workflow Trigger name.
@@ -56,7 +52,6 @@ pipeline {
         AZURE_CLIENT_ID = credentials('azurerm_client_id')
         AZURE_CLIENT_SECRET = credentials('azurerm_client_secret')
         AZURE_TENANT_ID = credentials('azurerm_tenant_id')
-        FILE_PREFIX = "${params.ENVIRONMENT}"
         SONARQUBE_SCANNER_HOME = tool 'sonarscanner-5'
         logicAppResourceId="/subscriptions/${params.SUBSCRIPTION}/resourceGroups/${params.RESOURCE_GROUP_NAME}/providers/Microsoft.Web/sites/${params.AZURE_LOGICAPP_NAME}"
     }
@@ -65,11 +60,12 @@ pipeline {
         stage('Checkout') {
             steps {
                 // checkout scm
-                git branch: 'main', url: 'https://github.com/tajuddin-sonata/v2-eventtrigger.git'
+                git branch: 'feature/eventtrigger', url: 'https://github.com/tajuddin-sonata/v2-managed-identity.git'
 
             }
         }
         
+        /*
         stage('Check/install Azure Tools') {
             steps {
                 script {
@@ -111,6 +107,7 @@ pipeline {
                 }
             }
         }
+        */
 
         stage('rewrite the code') {
             steps {
@@ -130,27 +127,6 @@ pipeline {
             }
         }
 
-        /*
-        stage('SonarQube Analysis') {
-            steps {
-                withSonarQubeEnv('sonarqube-9.9') {
-                    script {
-                        sh """
-                            echo "SonarQube Analysis"
-                            
-                            ${SONARQUBE_SCANNER_HOME}/bin/sonar-scanner \
-                                -Dsonar.projectKey=My-Eventtrigger \
-                                -Dsonar.host.url=http://4.240.69.23:9000 \
-                                -Dsonar.sources=src \
-                                -Dsonar.sourceEncoding=UTF-8 \
-                                -Dsonar.python.version=3.11
-                                -Dsonar.login=sqp_86c083368ec94f4237a7e8514b33f2d25a111748
-                        """
-                    }
-                }
-            }
-        }
-        */
 
         stage('SonarQube Analysis') {
             steps {
@@ -168,7 +144,7 @@ pipeline {
                     echo "Quality Gate Check"
                     timeout(time: 1, unit: 'HOURS') {
                         def qg = waitForQualityGate()
-                        if (dq.status != 'OK') {
+                        if (qg.status != 'OK') {
                             error "Pipeline aborted due to quality failure: ${qg.status}"
                             currentBuild.result = 'FAILURE'
 
@@ -191,50 +167,27 @@ pipeline {
                             artifact_version=\$(git describe --tags)
                             echo "\${artifact_version}" > src/version.txt
                             cd src
-                            zip -r "../$FILE_PREFIX-ci-eventtrigger-\${artifact_version}.zip" *
+                            zip -r "../az-ci-eventtrigger-\${artifact_version}.zip" *
                             cd $WORKSPACE
-                            echo "CREATED [$FILE_PREFIX-ci-eventtrigger-\${artifact_version}.zip]"
+                            echo "CREATED [az-ci-eventtrigger-\${artifact_version}.zip]"
                             curl -v -u nexus-user:nexus@123 --upload-file \
-                                "$FILE_PREFIX-ci-eventtrigger-\${artifact_version}.zip" \
-                                "http://74.225.187.237:8081/repository/packages/cca/$FILE_PREFIX-ci-eventtrigger-\${artifact_version}.zip"
+                                "az-ci-eventtrigger-\${artifact_version}.zip" \
+                                "http://74.225.187.237:8081/repository/packages/cca/az-ci-eventtrigger-\${artifact_version}.zip"
                         else
                             artifact_version=$ver
                             echo "Downloading specified artifact version from Nexus..."
-                            curl -v -u nexus-user:nexus@123 -O "http://74.225.187.237:8081/repository/packages/cca/$FILE_PREFIX-ci-eventtrigger-\${artifact_version}.zip"
+                            curl -v -u nexus-user:nexus@123 -O "http://74.225.187.237:8081/repository/packages/cca/az-ci-eventtrigger-\${artifact_version}.zip"
                         fi
-                        rm -rf "$FILE_PREFIX-ci-eventtrigger-\${artifact_version}"
-                        unzip "$FILE_PREFIX-ci-eventtrigger-\${artifact_version}.zip" -d "$FILE_PREFIX-ci-eventtrigger-\${artifact_version}"
+                        rm -rf "az-ci-eventtrigger-\${artifact_version}"
+                        unzip "az-ci-eventtrigger-\${artifact_version}.zip" -d "az-ci-eventtrigger-\${artifact_version}"
 
                         ls -ltr
-                        cd $FILE_PREFIX-ci-eventtrigger-\${artifact_version}
+                        cd az-ci-eventtrigger-\${artifact_version}
                         func azure functionapp publish ${params.AZURE_FUNCTION_NAME} --python
                     """
                 }
             }
         }
-
-        /*
-        stage('Deploy Code to Azure Function App') {
-            steps {
-                script {
-
-
-                    // // install azure-functions-core-tools install
-                    // wget https://github.com/Azure/azure-functions-core-tools/releases/download/4.0.5455/Azure.Functions.Cli.linux-x64.4.0.5455.zip
-                    // unzip -o -d azure-functions-cli Azure.Functions.Cli.linux-x64.*.zip
-                    // cd azure-functions-cli
-                    // chmod +x func
-                    // chmod +x gozip
-                    // export PATH=`pwd`:$PATH
-                    // cd ..
-
-                    sh """
-                    ls -ltr
-                    func azure functionapp publish ${params.AZURE_FUNCTION_NAME} --python
-                    """
-                }
-            }
-        } */
  
     }
 }
