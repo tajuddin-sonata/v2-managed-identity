@@ -105,7 +105,6 @@ pipeline {
         AZURE_CLIENT_ID = credentials('azurerm_client_id')
         AZURE_CLIENT_SECRET = credentials('azurerm_client_secret')
         AZURE_TENANT_ID = credentials('azurerm_tenant_id')
-        ZIP_FILE_NAME = "${params.AZURE_FUNCTION_NAME}"
         SONARQUBE_SCANNER_HOME = tool 'sonarscanner-5'
         functionAppId="/subscriptions/${params.SUBSCRIPTION}/resourceGroups/${params.RESOURCE_GROUP_NAME}/providers/Microsoft.Web/sites/${params.AZURE_FUNCTION_NAME}"
     }
@@ -145,7 +144,7 @@ pipeline {
                                 -Dsonar.sources=src \
                                 -Dsonar.sourceEncoding=UTF-8 \
                                 -Dsonar.python.version=3.11
-                                -Dsonar.login=sqp_86c083368ec94f4237a7e8514b33f2d25a111748
+                                -Dsonar.login=sqp_0ba679c775fd64c460f66bb42f104ebfb8d10241
                         """
                     }
                 }
@@ -163,14 +162,13 @@ pipeline {
             }
         }
 
-        /*
         stage ('Quality Gate') {
             steps {
                 script {
                     echo "Quality Gate Check"
                     timeout(time: 1, unit: 'HOURS') {
                         def qg = waitForQualityGate()
-                        if (dq.status != 'OK') {
+                        if (qg.status != 'OK') {
                             error "Pipeline aborted due to quality failure: ${qg.status}"
                             currentBuild.result = 'FAILURE'
 
@@ -179,9 +177,8 @@ pipeline {
                 }
             }
         }
-        */
-        
 
+        /*
         stage('Create FunctionApp') {
             steps {
                 // Login to azure using service principal
@@ -211,6 +208,7 @@ pipeline {
                 sh "az network private-endpoint dns-zone-group create --endpoint-name ${params.AZURE_FUNCTION_NAME}-private-endpoint -g ${params.RESOURCE_GROUP_NAME} -n ${params.AZURE_FUNCTION_NAME}-dns-config --zone-name default --private-dns-zone privatelink.azurewebsites.net" 
             }
         }
+        */
 
         stage('Deploy artifacts to Nexus & Azure') {
             steps {
@@ -224,22 +222,22 @@ pipeline {
                             artifact_version=\$(git describe --tags)
                             echo "\${artifact_version}" > src/version.txt
                             cd src
-                            zip -r "../$ZIP_FILE_NAME-\${artifact_version}.zip" *
+                            zip -r "../az-ci-configurator-\${artifact_version}.zip" *
                             cd $WORKSPACE
-                            echo "CREATED [$ZIP_FILE_NAME-\${artifact_version}.zip]"
+                            echo "CREATED [az-ci-configurator-\${artifact_version}.zip]"
                             curl -v -u nexus-user:nexus@123 --upload-file \
-                                "$ZIP_FILE_NAME-\${artifact_version}.zip" \
-                                "http://20.40.49.121:8081/repository/ci-config-service/$ZIP_FILE_NAME-\${artifact_version}.zip"
+                                "az-ci-configurator-\${artifact_version}.zip" \
+                                "http://74.225.187.237:8081/repository/ci-config-service/az-ci-configurator-\${artifact_version}.zip"
                         else
                             artifact_version=$ver
                             echo "Downloading specified artifact version from Nexus..."
-                            curl -v -u nexus-user:nexus@123 -O "http://20.40.49.121:8081/repository/ci-config-service/$ZIP_FILE_NAME-\${artifact_version}.zip"
+                            curl -v -u nexus-user:nexus@123 -O "http://74.225.187.237:8081/repository/ci-config-service/az-ci-configurator-\${artifact_version}.zip"
                         fi
-                        rm -rf "$ZIP_FILE_NAME-\${artifact_version}"
-                        unzip "$ZIP_FILE_NAME-\${artifact_version}.zip" -d "$ZIP_FILE_NAME-\${artifact_version}"
+                        rm -rf "az-ci-configurator-\${artifact_version}"
+                        unzip "az-ci-configurator-\${artifact_version}.zip" -d "az-ci-configurator-\${artifact_version}"
 
                         ls -ltr
-                        cd $ZIP_FILE_NAME-\${artifact_version}
+                        cd az-ci-configurator-\${artifact_version}
                         func azure functionapp publish ${params.AZURE_FUNCTION_NAME} --python
                     """
                 }
