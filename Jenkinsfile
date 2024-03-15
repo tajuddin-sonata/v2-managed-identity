@@ -20,17 +20,11 @@ pipeline {
         
         string(name: 'VERSION', description: 'Explicit version to deploy (i.e., "v0.1"). Leave blank to build latest commit')
         
-        string(name: 'AZURE_FUNCTION_APP_NAME', defaultValue:'dev-func-wftranscribe-sitl-eus', description: '''The name of FunctionApp to deploy
-            dev-func-wftranscribe-cca-eus   for dev env.
-            stg-func-wftranscribe-cca-eus   for staging env.
-            prod-func-wftranscribe-cca-eus   for production env.
+        string(name: 'AZURE_FUNCTION_APP_NAME', defaultValue:'ssna-func-cca-dev-eus-transcribe', description: '''The name of FunctionApp to deploy
+            ssna-func-cca-dev-eus-transcribe   for dev env.
+            ssna-func-cca-stg-eus-transcribe   for staging env.
+            ssna-func-cca-prod-eus-transcribe   for production env.
             ''' )
-
-        string(name: 'RESOURCE_GROUP_NAME', defaultValue:'tfs_rg_dev_eus_sitl', description: ''' Azure Resource Group in which the FunctionApp need to deploy.
-            tfs_rg_dev_eus_sitl   for dev
-            tfs_rg_stg_eus_sitl   for stage
-            tfs_rg_prod_eus_sitl  for prod
-            ''')
 
     }
 
