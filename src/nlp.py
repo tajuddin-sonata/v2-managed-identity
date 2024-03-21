@@ -31,8 +31,9 @@ async def nlp_spacy(transcript, options=None):
 
     if not nlp:
         start_time = time()
-        # nlp = spacy.load("en_core_web_trf")
-        nlp = spacy.load("en_core_web_lg")
+        # nlp=spacy.load("en_core_web_sm")
+        nlp = spacy.load("en_core_web_trf")
+        # nlp = spacy.load("en_core_web_lg")
         if opts.rule_patterns:
             nlp.add_pipe('entity_ruler', config={"validate": True}).add_patterns(
                 opts.rule_patterns)  # type: ignore
