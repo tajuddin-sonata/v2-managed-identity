@@ -134,7 +134,6 @@ def main(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
 
     if not ("metadata" in transcript and "media" in transcript["metadata"]
         and transcript["metadata"]["media"]["media_type"]=="voice"):
-        ### Do spellcheck if spellcheck condition is met
         transcript, out_files["spellchecked_transcript"] = do_spellcheck(
             CONFIG, transcript
         )
@@ -191,7 +190,6 @@ def upload_json(type: str, data: dict, CONFIG: Config):
     staging_blob = storage_client.get_container_client(CONFIG.staging_config.bucket_name).get_blob_client(
         staging_path
     )
-    # staging_blob.upload_from_string(dumps(data), content_type="application/json")
 
     staging_blob.upload_blob(dumps(data),content_type='application/json', overwrite=True)
     
