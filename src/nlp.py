@@ -9,7 +9,7 @@ import logging
 
 nlp = None
 
-# Define custom extension attributes
+## Define custom extension attributes
 Doc.set_extension('blob', default=None)
 
 
@@ -31,7 +31,8 @@ async def nlp_spacy(transcript, options=None):
 
     if not nlp:
         start_time = time()
-        nlp = spacy.load("en_core_web_trf")
+        # nlp = spacy.load("en_core_web_trf")
+        nlp = spacy.load("en_core_web_lg")
         if opts.rule_patterns:
             nlp.add_pipe('entity_ruler', config={"validate": True}).add_patterns(
                 opts.rule_patterns)  # type: ignore
@@ -46,27 +47,31 @@ async def nlp_spacy(transcript, options=None):
         combined_data) > 0 else ((), (), ())
     del combined_data
 
-    # Asynchronously process the texts using nlp.pipe() and asyncio.gather()
-    processed_docs = await asyncio.gather(*[asyncio.to_thread(nlp, text) for text in texts_to_zip])
+    ### Asynchronously process the texts using nlp.pipe() and asyncio.gather()
+    # processed_docs = await asyncio.gather(*[asyncio.to_thread(nlp, text) for text in texts_to_zip])
 
     nlp_turns = []
-    for index, speaker, doc, docjson in zip(indexes_to_zip, speakers_to_zip, processed_docs, [doc.to_json() for doc in processed_docs]):
-        # Debugging: Print out the processed document JSON
-        logging.info(f"Processed Doc JSON:{docjson}")
+    # for index, speaker, doc, docjson in zip(indexes_to_zip, speakers_to_zip, processed_docs, [doc.to_json() for doc in processed_docs]):
+    
+    for index, speaker, doc, docjson in [(index, speaker, doc, doc.to_json())
+        for (index, speaker, doc) in zip(indexes_to_zip, speakers_to_zip, nlp.pipe(texts_to_zip))]:
+           
+        ### Debugging: Print out the processed document JSON
+        # logging.info(f"Processed Doc JSON:{docjson}")
 
-        # Debugging: Print out the doc object to verify if it contains the _.blob attribute
+        ### Debugging: Print out the doc object to verify if it contains the _.blob attribute
         logging.info(f"Doc Object:{doc}")
 
-        # Extract sentiment if available
+        ### Extract sentiment if available
         sentiment = {'polarity': None, 'subjectivity': None}
         if doc._.blob:
             sentiment['polarity'] = doc._.blob.polarity
             sentiment['subjectivity'] = doc._.blob.subjectivity
 
-        # Debugging: Print out sentiment
+        ### Debugging: Print out sentiment
         logging.info(f"Sentiment:{sentiment}")
 
-        # Create nlp_turn dictionary
+        ### Create nlp_turn dictionary
         nlp_turn = {
             'turn_index': index,
             'speaker': speaker,
@@ -77,7 +82,7 @@ async def nlp_spacy(transcript, options=None):
             'sentiment': sentiment
         }
 
-        # Debugging: Print out the nlp_turn dictionary
+        ### Debugging: Print out the nlp_turn dictionary
         logging.info(f"nlp_turn:{nlp_turn}")
 
         nlp_turns.append(nlp_turn)
