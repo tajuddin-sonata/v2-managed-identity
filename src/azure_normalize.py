@@ -56,8 +56,19 @@ class Turn:
         self.start_time = self.words_array[0].start_time
         self.end_time = self.words_array[-1].end_time
         self.source = 'Agent' if channel_index == 0 else 'Caller'
+        
+def normalize_azure(azure_stt_response, transaction_id, model, version, opts):
+    if not azure_stt_response['recognizedPhrases']:
+        # If no recognized phrases, return metadata with an empty turns_array
+        models = [model]
+        m1 = Model("base", version, "base")
+        m2 = ModelInfo(m1)
+        m3 = Media("voice", "")
+        channels = 0
+        meta_obj = Metadata(transaction_id, transaction_id, "", azure_stt_response['timestamp'],  (azure_stt_response['durationInTicks'] / 10000000), channels, models, m2, m3, opts)
+        json_data = generate_json(meta_obj.__dict__, [])
+        return json_data
 
-def normalize_azure(azure_stt_response, transaction_id, model, version,options):
     azure_turn_index = 1
     azure_turns_array = []
     azure_words_array = []
@@ -68,28 +79,29 @@ def normalize_azure(azure_stt_response, transaction_id, model, version,options):
     m1 = Model("base", version, "base")
     m2 = ModelInfo(m1)
     m3 = Media("voice", "")
+
     channel_numbers = set()
     for phrase in azure_stt_response['combinedRecognizedPhrases']:
         channel_numbers.add(phrase['channel'])
 
     # Counting the unique channel numbers
     channels = len(channel_numbers)
-    meta_obj = Metadata(transaction_id, transaction_id, "", azure_stt_response['timestamp'], (azure_stt_response['durationInTicks'] / 10000000), channels, models, m2, m3, options)
+    meta_obj = Metadata(transaction_id, transaction_id, "", azure_stt_response['timestamp'], (azure_stt_response['durationInTicks'] / 10000000), channels, models, m2, m3, opts)
     sorted_recognized_phrases = sorted(azure_stt_response['recognizedPhrases'], key=lambda x: x['offsetInTicks'])
     prev_channel = sorted_recognized_phrases[0]['channel']
     for phrase in sorted_recognized_phrases:
         current_channel = phrase['channel']
-        if ((sorted_recognized_phrases.index(phrase) == len(sorted_recognized_phrases) - 1 or current_channel != prev_channel) and azure_words_array!=[]):
+        if ((sorted_recognized_phrases.index(phrase) == len(sorted_recognized_phrases) - 1 or current_channel != prev_channel) and azure_words_array != []):
             turn_obj = Turn(azure_turn_index, azure_turn_text, azure_words_array, prev_channel)
             azure_turns_array.append(turn_obj)
             azure_turn_index = azure_turn_index + 1
-            azure_turn_text=""
-            azure_words_array=[]
-            word_index=1
-        
+            azure_turn_text = ""
+            azure_words_array = []
+            word_index = 1
+
         confidence = phrase['nBest'][0]['confidence']
         azure_turn_text += phrase['nBest'][0]['display']
-            
+
         for azure_word in phrase['nBest'][0]['displayWords']:
             w = Word(azure_word, word_index, confidence)
             word_index = word_index + 1
