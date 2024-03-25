@@ -265,7 +265,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         staging_transcript_path
     )
 
-    staging_transcript_blob.upload_blob(dumps(normalized_format), content_type='application/json', overwrite=True)
+    staging_transcript_blob.upload_blob(normalized_format, content_type='application/json', overwrite=True)
     if not staging_transcript_blob.exists():
         abort(500,'transcript failed to upload to staging bucket')
 
